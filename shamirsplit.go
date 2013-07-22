@@ -2,26 +2,26 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// The shamirsplit package implements Shamir's cryptographic secret sharing
+// Package shamirsplit implements Shamir's cryptographic secret sharing
 // algorithm.
 package shamirsplit
 
 import (
-	"big"
+	"errors"
+	"math/big"
 	"io"
-	"os"
 )
 
 // Split takes a secret number and returns n shares where any k shares can be
 // combined to recover the original secret. However, possession of less than k
 // shares reveals nothing about the secret.
-func Split(secret *big.Int, modulus *big.Int, k, n int, rand io.Reader) (shares []*big.Int, err os.Error) {
+func Split(secret *big.Int, modulus *big.Int, k, n int, rand io.Reader) (shares []*big.Int, err error) {
 	if k < 1 || n < k {
-		return nil, os.ErrorString("invalid split parameters")
+		return nil, errors.New("invalid split parameters")
 	}
 
 	if secret.Cmp(modulus) >= 0 {
-		return nil, os.ErrorString("secret must be less than split modulus")
+		return nil, errors.New("secret must be less than split modulus")
 	}
 
 	a := make([]*big.Int, k)
@@ -60,9 +60,9 @@ func Split(secret *big.Int, modulus *big.Int, k, n int, rand io.Reader) (shares 
 // Join takes k shares that resulted from Split and recovers the original
 // secret. The shares can be presented in any order, however the (zero based)
 // index of each share must be known and provided in shareNumbers.
-func Join(shares []*big.Int, shareNumbers []int, modulus *big.Int) (*big.Int, os.Error) {
+func Join(shares []*big.Int, shareNumbers []int, modulus *big.Int) (*big.Int, error) {
 	if len(shares) != len(shareNumbers) {
-		return nil, os.ErrorString("lengths of shares and shareNumbers must match")
+		return nil, errors.New("lengths of shares and shareNumbers must match")
 	}
 
 	secret := new(big.Int)
@@ -70,7 +70,7 @@ func Join(shares []*big.Int, shareNumbers []int, modulus *big.Int) (*big.Int, os
 
 	for i := 0; i < len(shares); i++ {
 		if shareNumbers[i] < 0 {
-			return nil, os.ErrorString("found negative share number")
+			return nil, errors.New("found negative share number")
 		}
 
 		c := big.NewInt(1)
@@ -88,7 +88,7 @@ func Join(shares []*big.Int, shareNumbers []int, modulus *big.Int) (*big.Int, os
 			d := new(big.Int)
 			x := new(big.Int)
 			y := new(big.Int)
-			big.GcdInt(d, x, y, bigJ, modulus)
+			d.GCD(x, y, bigJ, modulus)
 			if x.Cmp(zero) < 0 {
 				x.Add(x, modulus)
 			}
@@ -105,7 +105,7 @@ func Join(shares []*big.Int, shareNumbers []int, modulus *big.Int) (*big.Int, os
 }
 
 // randomNumber returns a uniform random value in [0, max).
-func randomNumber(rand io.Reader, max *big.Int) (n *big.Int, err os.Error) {
+func randomNumber(rand io.Reader, max *big.Int) (n *big.Int, err error) {
 	k := (max.BitLen() + 7) / 8
 
 	// r is the number of bits in the used in the most significant byte of
@@ -133,6 +133,4 @@ func randomNumber(rand io.Reader, max *big.Int) (n *big.Int, err os.Error) {
 			return
 		}
 	}
-
-	return
 }
