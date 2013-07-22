@@ -15,7 +15,7 @@ import (
 // Split takes a secret number and returns n shares where any k shares can be
 // combined to recover the original secret. However, possession of less than k
 // shares reveals nothing about the secret.
-func Split(secret *big.Int, modulus *big.Int, k, n int, rand io.Reader) (shares []*big.Int, err error) {
+func Split(secret, modulus *big.Int, k, n int, rand io.Reader) (shares []*big.Int, err error) {
 	if k < 1 || n < k {
 		return nil, errors.New("invalid split parameters")
 	}
